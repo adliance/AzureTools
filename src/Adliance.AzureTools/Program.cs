@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Adliance.AzureTools.CopyDatabase;
+using Adliance.AzureTools.CopyDatabase.Parameters;
 using Adliance.AzureTools.MirrorStorage;
 using Adliance.AzureTools.MirrorStorage.Parameters;
 using CommandLine;
@@ -16,7 +18,12 @@ namespace Adliance.AzureTools
 
         private static async Task Main(string[] args)
         {
-            var parserResult = Parser.Default.ParseArguments<MirrorStorageToStorageParameters, MirrorStorageToLocalParameters, MirrorLocalToLocalParameters, MirrorLocalToStorageParameters>(args);
+            var parserResult = Parser.Default.ParseArguments<
+                MirrorStorageToStorageParameters,
+                MirrorStorageToLocalParameters,
+                MirrorLocalToLocalParameters,
+                MirrorLocalToStorageParameters,
+                CopyDatabaseParameters>(args);
             await parserResult.WithParsedAsync<MirrorStorageToStorageParameters>(async p =>
             {
                 await new MirrorStorageToStorageService(p).Run();
@@ -35,6 +42,11 @@ namespace Adliance.AzureTools
             await parserResult.WithParsedAsync<MirrorLocalToStorageParameters>(async p =>
             {
                 await new MirrorLocalToStorageService(p).Run();
+                Exit(ExitCodeOk);
+            });
+            await parserResult.WithParsedAsync<CopyDatabaseParameters>(async p =>
+            {
+                await new CopyDatabaseService(p).Run();
                 Exit(ExitCodeOk);
             });
 
