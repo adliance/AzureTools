@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace Adliance.AzureTools.Parameters
+namespace Adliance.AzureTools.MirrorStorage.Parameters
 {
     [Verb("mirror-storage-to-local", HelpText = "Copies all containers and blobs from one Azure Storage account to a local directory.")]
     public class MirrorStorageToLocalParameters

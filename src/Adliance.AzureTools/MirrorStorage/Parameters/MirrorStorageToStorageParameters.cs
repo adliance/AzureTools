@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace Adliance.AzureTools.Parameters
+namespace Adliance.AzureTools.MirrorStorage.Parameters
 {
     [Verb("mirror-storage-to-storage", HelpText = "Copies all containers and blobs from one Azure Storage account to another one.")]
     public class MirrorStorageToStorageParameters

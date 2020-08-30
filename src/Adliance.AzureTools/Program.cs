@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Adliance.AzureTools.MirrorStorage;
-using Adliance.AzureTools.Parameters;
+using Adliance.AzureTools.MirrorStorage.Parameters;
 using CommandLine;
 using CommandLine.Text;
 

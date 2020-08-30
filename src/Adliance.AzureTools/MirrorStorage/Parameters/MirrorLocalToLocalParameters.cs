@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace Adliance.AzureTools.Parameters
+namespace Adliance.AzureTools.MirrorStorage.Parameters
 {
     [Verb("mirror-local-to-local", HelpText = "Copies all subdirectories and files from a local directory to another local directory.")]
     public class MirrorLocalToLocalParameters

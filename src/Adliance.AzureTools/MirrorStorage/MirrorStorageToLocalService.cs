@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Adliance.AzureTools.Parameters;
+using Adliance.AzureTools.MirrorStorage.Parameters;
 
 namespace Adliance.AzureTools.MirrorStorage
 {
