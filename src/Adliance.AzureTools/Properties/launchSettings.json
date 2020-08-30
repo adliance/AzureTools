@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "AzureTools": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}
+
