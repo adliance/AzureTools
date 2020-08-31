@@ -9,7 +9,7 @@ AzureTools is a set of common operations for Azure that we use on a daily basis.
 ## Installation
 
 ````
-dotnet tools install -g Adliance.AzureTools
+dotnet tool install -g Adliance.AzureTools
 ````
 
 ## Operations
