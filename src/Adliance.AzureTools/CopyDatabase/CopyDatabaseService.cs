@@ -2,6 +2,7 @@
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Adliance.AzureTools.CopyDatabase.Parameters;
@@ -49,10 +50,10 @@ namespace Adliance.AzureTools.CopyDatabase
                         await SqlCommand(connection, $"ALTER DATABASE [{targetDbName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;");
                         await SqlCommand(connection, $"DROP DATABASE [{targetDbName}];");
                     }
-                    
+
                     Console.WriteLine($"Renaming temporary database to \"{targetDbName}\" ...");
                     await SqlCommand(connection, $"ALTER DATABASE [{temporaryDbName}] MODIFY NAME = [{targetDbName}];");
-                    
+
                     if (!string.IsNullOrWhiteSpace(_parameters.ElasticPool))
                     {
                         Console.WriteLine($"Setting elastic pool to \"{_parameters.ElasticPool}\" ...");
@@ -75,7 +76,7 @@ namespace Adliance.AzureTools.CopyDatabase
                 await command.ExecuteNonQueryAsync();
             }
         }
-        
+
         private async Task<object> SqlScalar(SqlConnection connection, string sql)
         {
             await using (var command = new SqlCommand(sql, connection))
@@ -102,13 +103,16 @@ namespace Adliance.AzureTools.CopyDatabase
 
         private async Task RunSqlPackage(params string[] arguments)
         {
-            var sqlPackage = new FileInfo("CopyDatabase/sqlpackage/sqlpackage.exe");
-            if (!sqlPackage.Exists)
+            var codeBase = Assembly.GetExecutingAssembly().CodeBase ?? "";
+            var assemblyPath = Uri.UnescapeDataString(new UriBuilder(codeBase).Path);
+            var sqlPackagePath = new FileInfo(Path.Combine(Path.GetDirectoryName(assemblyPath) ?? "", "CopyDatabase/sqlpackage/sqlpackage.exe"));
+
+            if (!sqlPackagePath.Exists)
             {
-                throw new Exception($"{sqlPackage.FullName} does not exist.");
+                throw new Exception($"{sqlPackagePath.FullName} does not exist.");
             }
 
-            var pi = new ProcessStartInfo(sqlPackage.FullName)
+            var pi = new ProcessStartInfo(sqlPackagePath.FullName)
             {
                 Arguments = string.Join(" ", arguments),
                 UseShellExecute = false,
