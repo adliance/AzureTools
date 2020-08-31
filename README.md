@@ -18,7 +18,7 @@ dotnet tool install -g Adliance.AzureTools
 Mirrors an Azure Storage account (BLOB storage) either to another Storage account, or to the local file system, or vice versa.
 
 ````
-azuretools mirror-storage-to-local --source "DefaultEndpointsProtocol=https; AccountName=my_account;A ccountKey=my_key; EndpointSuffix=core.windows.net" --target "c:\my_local_directory"
+azuretools mirror-storage-to-local --source "DefaultEndpointsProtocol=https; AccountName=my_account; AccountKey=my_key; EndpointSuffix=core.windows.net" --target "c:\my_local_directory"
 ````
 
 Additionaly, these commands are available for all combinations of storage/local:
