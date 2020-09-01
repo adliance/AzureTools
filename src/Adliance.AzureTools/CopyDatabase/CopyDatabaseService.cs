@@ -33,12 +33,12 @@ namespace Adliance.AzureTools.CopyDatabase
                 else
                 {
                     Console.WriteLine($"Downloading database to \"{fileName}\" ...");
-                    await DownloadDatabase(_parameters.Source, fileName);
+                    DownloadDatabase(_parameters.Source, fileName);
                 }
 
                 var temporaryDbName = targetDbName + "_" + Guid.NewGuid();
                 Console.WriteLine($"Restoring to temporary database \"{temporaryDbName}\" ...");
-                await RestoreDatabase(_parameters.Target.Replace(targetDbName, temporaryDbName), fileName);
+                RestoreDatabase(_parameters.Target.Replace(targetDbName, temporaryDbName), fileName);
 
                 await using (var connection = new SqlConnection(_parameters.Target.Replace(targetDbName, "master")))
                 {
@@ -85,23 +85,23 @@ namespace Adliance.AzureTools.CopyDatabase
             }
         }
 
-        private async Task DownloadDatabase(string connectionString, string fileName)
+        private void DownloadDatabase(string connectionString, string fileName)
         {
-            await RunSqlPackage(
+            RunSqlPackage(
                 "/Action:Export",
                 $" /TargetFile:\"{fileName}\"",
                 $" /SourceConnectionString:\"{connectionString}\"");
         }
 
-        private async Task RestoreDatabase(string connectionString, string fileName)
+        private void RestoreDatabase(string connectionString, string fileName)
         {
-            await RunSqlPackage(
+            RunSqlPackage(
                 "/Action:Import",
                 $" /SourceFile:\"{fileName}\"",
                 $" /TargetConnectionString:\"{connectionString}\"");
         }
 
-        private async Task RunSqlPackage(params string[] arguments)
+        private void RunSqlPackage(params string[] arguments)
         {
             var codeBase = Assembly.GetExecutingAssembly().CodeBase ?? "";
             var assemblyPath = Uri.UnescapeDataString(new UriBuilder(codeBase).Path);
@@ -114,13 +114,11 @@ namespace Adliance.AzureTools.CopyDatabase
 
             var pi = new ProcessStartInfo(sqlPackagePath.FullName)
             {
-                Arguments = string.Join(" ", arguments),
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
+                Arguments = string.Join(" ", arguments)
             };
 
+            var currentConsoleColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
             var process = Process.Start(pi);
             if (process == null)
             {
@@ -128,10 +126,11 @@ namespace Adliance.AzureTools.CopyDatabase
             }
 
             process.WaitForExit();
+            Console.ForegroundColor = currentConsoleColor;
 
             if (process.ExitCode != 0)
             {
-                throw new Exception(await process.StandardError.ReadToEndAsync());
+                throw new Exception($"sqlpackage failed (exit code {process.ExitCode}.");
             }
         }
 
