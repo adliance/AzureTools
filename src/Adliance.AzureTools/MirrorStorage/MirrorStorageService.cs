@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Humanizer;
@@ -38,7 +39,7 @@ namespace Adliance.AzureTools.MirrorStorage
                 var filestoDelete = FindFilesToDelete(sourceContent, targetContent);
                 var containersToDelete = FindContainersToDelete(sourceContent, targetContent);
                 Console.WriteLine($"\t {"file".ToQuantity(filestoDelete.Sum(x => x.Blobs.Count))} to delete with a total of {filestoDelete.Sum(x => x.Size).Bytes().Humanize("#.##")}.");
-                
+
                 await CreateContainers(containersToCreate);
                 await CopyFiles(filesToCopy);
 
@@ -63,7 +64,7 @@ namespace Adliance.AzureTools.MirrorStorage
             {
                 return;
             }
-            
+
             Console.WriteLine("Creating containers on target ...");
             var totalCount = containersToCreate.Count;
             var currentCount = 0;
@@ -82,21 +83,21 @@ namespace Adliance.AzureTools.MirrorStorage
                 }
             }
         }
-        
+
         private async Task DeleteContainers(IList<string> containersToDelete)
         {
             if (!containersToDelete.Any())
             {
                 return;
             }
-            
+
             Console.WriteLine("Deleting containers on target ...");
             var totalCount = containersToDelete.Count;
             var currentCount = 0;
             foreach (var c in containersToDelete)
             {
                 Console.Write($"\t ({++currentCount}/{totalCount}) Deleting {c} ... ");
-                
+
                 try
                 {
                     await _target.DeleteContainer(c);
@@ -115,20 +116,23 @@ namespace Adliance.AzureTools.MirrorStorage
             {
                 return;
             }
-            
+
             Console.WriteLine("Copying files from source to target ...");
             var totalCount = filesToCopy.Sum(x => x.Blobs.Count);
             var currentCount = 0;
+            var stopwatch = new Stopwatch();
+
             foreach (var c in filesToCopy)
             {
                 foreach (var b in c.Blobs)
                 {
+                    stopwatch.Restart();
                     Console.Write($"\t ({++currentCount}/{totalCount}) Copying {c.Name}/{b.Name} ({b.Size.Bytes().Humanize("#.##")}) ... ");
 
                     try
                     {
                         await _source.DownloadTo(c.Name, b.Name, _target);
-                        Console.WriteLine("completed.");
+                        Console.WriteLine($"completed ({stopwatch.Elapsed.Humanize()}, {b.Size.Bytes().Per(stopwatch.Elapsed).Humanize("#.##")}).");
                     }
                     catch (Exception ex)
                     {
@@ -144,7 +148,7 @@ namespace Adliance.AzureTools.MirrorStorage
             {
                 return;
             }
-            
+
             Console.WriteLine("Deleting files from target ...");
             var totalCount = filesToDelete.Sum(x => x.Blobs.Count);
             var currentCount = 0;
@@ -166,7 +170,7 @@ namespace Adliance.AzureTools.MirrorStorage
                 }
             }
         }
-        
+
         private IList<Container> FindFilesToCopy(IList<Container> source, IList<Container> target)
         {
             var result = new List<Container>();
@@ -233,12 +237,13 @@ namespace Adliance.AzureTools.MirrorStorage
                 {
                     continue;
                 }
+
                 result.Add(c.Name);
             }
 
             return result;
         }
-        
+
         private IList<string> FindContainersToCreate(IList<Container> source, IList<Container> target)
         {
             var result = new List<string>();
@@ -249,6 +254,7 @@ namespace Adliance.AzureTools.MirrorStorage
                 {
                     continue;
                 }
+
                 result.Add(c.Name);
             }
 

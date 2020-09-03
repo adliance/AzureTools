@@ -10,7 +10,7 @@ namespace Adliance.AzureTools.MirrorStorage
         Task<IList<Container>> Enumerate();
 
         Task DownloadTo(string containerName, string fileName, IStorage target);
-        Task UploadFrom(string containerName, string fileName, Stream sourceStream);
+        Task UploadFrom(string containerName, string fileName, string temporaryFileName);
         Task Delete(string containerName, string fileName);
         Task CreateContainer(string containerName);
         Task DeleteContainer(string containerName);

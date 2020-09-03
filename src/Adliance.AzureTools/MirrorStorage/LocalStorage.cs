@@ -38,19 +38,29 @@ namespace Adliance.AzureTools.MirrorStorage
         public async Task DownloadTo(string containerName, string fileName, IStorage target)
         {
             var filePath = Path.Combine(_basePath, containerName, fileName);
-            await using (var sourceStream = File.OpenRead(filePath))
+            var tempFile = Path.GetTempFileName();
+            File.Copy(filePath,tempFile);
+            
+            await target.UploadFrom(containerName, fileName, tempFile);
+
+            if (File.Exists(tempFile))
             {
-                await target.UploadFrom(containerName, fileName, sourceStream);
+                try
+                {
+                    File.Delete(tempFile);
+                }
+                catch
+                {
+                    // do nothing here
+                }
             }
         }
 
-        public async Task UploadFrom(string containerName, string fileName, Stream sourceStream)
+        public Task UploadFrom(string containerName, string fileName, string temporaryFileName)
         {
             var filePath = Path.Combine(_basePath, containerName, fileName);
-            await using (var targetStream = File.OpenWrite(filePath))
-            {
-                await sourceStream.CopyToAsync(targetStream);
-            }
+            File.Move(temporaryFileName, filePath, true);
+            return Task.CompletedTask;
         }
 
         public Task Delete(string containerName, string fileName)
