@@ -26,22 +26,45 @@ namespace Adliance.AzureTools.MirrorStorage
             {
                 var container = new Container(d.Name);
                 result.Add(container);
-                foreach (var f in d.GetFiles())
-                {
-                    container.Blobs.Add(new Blob(f.Name, f.Length));
-                }
+                Enumerate(container, d, d);
             }
 
             return await Task.FromResult(result);
+        }
+
+        private void Enumerate(Container container, DirectoryInfo baseDirectory, DirectoryInfo currentDirectory)
+        {
+            foreach (var f in currentDirectory.GetFiles())
+            {
+                container.Blobs.Add(new Blob(GetRelative(baseDirectory, currentDirectory, f.Name), f.Length));
+            }
+
+            foreach (var d in currentDirectory.GetDirectories())
+            {
+                Enumerate(container, baseDirectory, d);
+            }
+        }
+
+        private string GetRelative(DirectoryInfo baseDirectory, DirectoryInfo currentDirectory, string name)
+        {
+            return Path.Combine(currentDirectory.FullName.Substring(baseDirectory.FullName.Length), name).Replace("\\", "/").Trim('/');
         }
 
         public async Task DownloadTo(string containerName, string fileName, IStorage target)
         {
             var filePath = Path.Combine(_basePath, containerName, fileName);
             var tempFile = Path.GetTempFileName();
-            File.Copy(filePath,tempFile);
-            
-            await target.UploadFrom(containerName, fileName, tempFile);
+
+            if (File.Exists(filePath))
+            {
+                File.Copy(filePath, tempFile, true);
+                await target.UploadFrom(containerName, fileName, tempFile);
+            }
+            else if (Directory.Exists(filePath))
+            {
+                await File.WriteAllBytesAsync(tempFile, new byte[0]);
+                await target.UploadFrom(containerName, fileName, tempFile);
+            }
 
             if (File.Exists(tempFile))
             {
@@ -59,6 +82,12 @@ namespace Adliance.AzureTools.MirrorStorage
         public Task UploadFrom(string containerName, string fileName, string temporaryFileName)
         {
             var filePath = Path.Combine(_basePath, containerName, fileName);
+
+            if (!Directory.Exists(Path.GetDirectoryName(filePath)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            }
+
             File.Move(temporaryFileName, filePath, true);
             return Task.CompletedTask;
         }
@@ -83,7 +112,7 @@ namespace Adliance.AzureTools.MirrorStorage
 
             return Task.CompletedTask;
         }
-        
+
         public Task DeleteContainer(string containerName)
         {
             if (Directory.Exists(Path.Combine(_basePath, containerName)))

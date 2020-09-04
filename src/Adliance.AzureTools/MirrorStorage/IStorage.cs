@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -26,6 +25,11 @@ namespace Adliance.AzureTools.MirrorStorage
         public string Name { get; }
         public IList<Blob> Blobs { get; } = new List<Blob>();
         public long Size => Blobs.Sum(x => x.Size);
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public class Blob
@@ -37,6 +41,11 @@ namespace Adliance.AzureTools.MirrorStorage
         }
 
         public string Name { get; }
-        public long Size { get; private set; }
+        public long Size { get; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
