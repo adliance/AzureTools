@@ -48,8 +48,23 @@ namespace Adliance.AzureTools.CopyDatabase
                     if (databaseExists is int i && i > 0)
                     {
                         Console.WriteLine("Deleting existing database ...");
-                        await SqlCommand(connection, $"ALTER DATABASE [{targetDbName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;");
-                        await SqlCommand(connection, $"DROP DATABASE [{targetDbName}];");
+                        try
+                        {
+                            await SqlCommand(connection, $"ALTER DATABASE [{targetDbName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;");
+                        }
+                        catch 
+                        {
+                           // do nothing here, fails in Azure but has no effect usually
+                        }
+
+                        try
+                        {
+                            await SqlCommand(connection, $"DROP DATABASE [{targetDbName}];");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Unable to delete existing database \"{targetDbName}\": {ex.Message}");
+                        }
                     }
 
                     Console.WriteLine($"Renaming temporary database to \"{targetDbName}\" ...");
