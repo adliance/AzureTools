@@ -44,7 +44,8 @@ namespace Adliance.AzureTools.CopyDatabase
                 {
                     await connection.OpenAsync();
 
-                    if (await SqlScalar(connection, $"SELECT db_id('{targetDbName}');") != DBNull.Value)
+                    var databaseExists = await SqlScalar(connection, $"SELECT COUNT(*) from master.sys.databases where name='{targetDbName}';");
+                    if (databaseExists is int i && i > 0)
                     {
                         Console.WriteLine("Deleting existing database ...");
                         await SqlCommand(connection, $"ALTER DATABASE [{targetDbName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;");
