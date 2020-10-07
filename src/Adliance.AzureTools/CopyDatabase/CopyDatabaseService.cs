@@ -24,8 +24,15 @@ namespace Adliance.AzureTools.CopyDatabase
             {
                 var sourceDbName = FindDatabaseName(_parameters.Source);
                 var targetDbName = FindDatabaseName(_parameters.Target);
-                var fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), $"{sourceDbName}.bacpac");
+                var targetAzureDbUrl = GetAzureDatabaseUrl(_parameters.Target);
+                
+                var confirmationResult = UserConfirmAzureDatabaseTarget(targetAzureDbUrl);
+                if (confirmationResult == AzureTargetConfirmation.AbortOperation)
+                {
+                    return;
+                }
 
+                var fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), $"{sourceDbName}.bacpac");
                 if (_parameters.UseLocalIfExists && File.Exists(fileName))
                 {
                     Console.WriteLine($"Using local file \"{fileName}\".");
@@ -85,6 +92,47 @@ namespace Adliance.AzureTools.CopyDatabase
             }
         }
 
+        private enum AzureTargetConfirmation
+        {
+            AbortOperation,
+            Confirmed,
+            NotAnAzureDatabaseTarget
+        }
+        
+        private AzureTargetConfirmation UserConfirmAzureDatabaseTarget(string targetAzureDbUrl)
+        {
+            // User should confirm operation, since we're going to manipulate an azure-hosted database
+            var isAzureDbUrl = !string.IsNullOrEmpty(targetAzureDbUrl);
+            if (!isAzureDbUrl)
+            {
+                return AzureTargetConfirmation.NotAnAzureDatabaseTarget;
+            }
+            
+            Console.WriteLine("[CRITICAL] The defined target is hosted at Microsoft Azure. This operation will override the target with the defined source. Without a backup, all data could be lost forever.");
+
+            var maxRetries = 3;
+            for (var retries = maxRetries; retries > 0; --retries)
+            {
+                Console.WriteLine($"Enter '{targetAzureDbUrl}' to confirm the operation, to abort leave empty and hit enter ({retries} retries left):");
+                    
+                var confirmationString = Console.ReadLine();
+                if (string.IsNullOrEmpty(confirmationString))
+                {
+                    Console.WriteLine("Aborting copy-database operation, nothing changed...");
+                    return AzureTargetConfirmation.AbortOperation;
+                }
+                
+                if (confirmationString == targetAzureDbUrl)
+                {
+                    Console.WriteLine("Confirmed, continue operation...");
+                    return AzureTargetConfirmation.Confirmed;
+                }
+            }
+            
+            Console.WriteLine("Too may retries. Aborting copy-database operation, nothing changed...");
+            return AzureTargetConfirmation.AbortOperation;
+        }
+        
         private async Task SqlCommand(SqlConnection connection, string sql)
         {
             await using (var command = new SqlCommand(sql, connection))
@@ -159,6 +207,17 @@ namespace Adliance.AzureTools.CopyDatabase
             }
 
             throw new Exception($"No database name found in \"{connectionString}\".");
+        }
+        
+        private string GetAzureDatabaseUrl(string connectionString)
+        {
+            var match = Regex.Match(connectionString, @"[ ;]*[Ss][Ee][Rr][Vv][Ee][Rr][ ]*\=[ ]*[Tt][Cc][Pp]:(.*?)\.[Dd][Aa][Tt][Aa][Bb][Aa][Ss][Ee]\.[Ww][Ii][Nn][Dd][Oo][Ww][Ss]\.[Nn][Ee][Tt].*[;$]", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                return match.Groups[1].Value.Trim();
+            }
+
+            return "";
         }
     }
 }
