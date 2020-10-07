@@ -152,7 +152,7 @@ namespace Adliance.AzureTools.CopyDatabase
 
         private string FindDatabaseName(string connectionString)
         {
-            var match = Regex.Match(connectionString, @"[ ;]Initial Catalog[ ]*\=(.*?)[;$]", RegexOptions.IgnoreCase);
+            var match = Regex.Match(connectionString, @"[ ;]*Initial Catalog[ ]*\=(.*?)[;$]", RegexOptions.IgnoreCase);
             if (match.Success)
             {
                 return match.Groups[1].Value.Trim();
