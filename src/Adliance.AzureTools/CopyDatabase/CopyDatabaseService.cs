@@ -211,7 +211,7 @@ namespace Adliance.AzureTools.CopyDatabase
         
         private string GetAzureDatabaseUrl(string connectionString)
         {
-            var match = Regex.Match(connectionString, @"[ ;]*[Ss][Ee][Rr][Vv][Ee][Rr][ ]*\=[ ]*[Tt][Cc][Pp]:(.*?)\.[Dd][Aa][Tt][Aa][Bb][Aa][Ss][Ee]\.[Ww][Ii][Nn][Dd][Oo][Ww][Ss]\.[Nn][Ee][Tt].*[;$]", RegexOptions.IgnoreCase);
+            var match = Regex.Match(connectionString, @"[ ;]*Server[ ]*\=[ ]*tcp:(.*?)\.database\.windows\.net.*[;$]", RegexOptions.IgnoreCase);
             if (match.Success)
             {
                 return match.Groups[1].Value.Trim();
