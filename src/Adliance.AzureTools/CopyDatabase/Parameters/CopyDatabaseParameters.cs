@@ -1,4 +1,5 @@
-﻿using CommandLine;
+﻿using System.ComponentModel.DataAnnotations;
+using CommandLine;
 
 namespace Adliance.AzureTools.CopyDatabase.Parameters
 {
@@ -11,5 +12,6 @@ namespace Adliance.AzureTools.CopyDatabase.Parameters
         [Option( 'p',"elastic-pool", Required = false, Default = "", HelpText = "If set, the target database will be moved to the specified elastic pool.")] public string ElasticPool { get; set; } = "";
         [Option( 'l', "use-local-bacpac", Required = false, Default = false, HelpText = "If true and a local BACPAC file exists, then it will be used instead of downloading a new one. This is useful if you want to restore a database often, but not download it all the time.")] public bool UseLocalIfExists { get; set; } = false;
 
+        [Option('f', "force", Required = false, Default = false, HelpText = "Force copy operation without any user confirmation / interaction.")] public bool Force { get; set; } = false;
     }
 }
