@@ -24,13 +24,24 @@ namespace Adliance.AzureTools.CopyDatabase
             {
                 var sourceDbName = FindDatabaseName(_parameters.Source);
                 var targetDbName = FindDatabaseName(_parameters.Target);
-                var targetAzureDbUrl = GetAzureDatabaseUrl(_parameters.Target);
-                
-                var confirmationResult = UserConfirmAzureDatabaseTarget(targetAzureDbUrl);
-                if (confirmationResult == AzureTargetConfirmation.AbortOperation)
+
+                var requireUserConfirmation = !_parameters.Force;
+                if (requireUserConfirmation)
                 {
-                    return;
+                    var targetAzureDbUrl = GetAzureDatabaseUrl(_parameters.Target);
+                    
+                    // User should confirm operation, since we're going to manipulate an azure-hosted database
+                    var isAzureDbUrl = !string.IsNullOrEmpty(targetAzureDbUrl);
+                    if (isAzureDbUrl)
+                    {
+                        var confirmationResult = UserConfirmAzureDatabaseTarget(targetAzureDbUrl);
+                        if (confirmationResult == AzureTargetConfirmation.AbortOperation)
+                        {
+                            return;
+                        }                        
+                    }
                 }
+                
 
                 var fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), $"{sourceDbName}.bacpac");
                 if (_parameters.UseLocalIfExists && File.Exists(fileName))
@@ -95,19 +106,11 @@ namespace Adliance.AzureTools.CopyDatabase
         private enum AzureTargetConfirmation
         {
             AbortOperation,
-            Confirmed,
-            NotAnAzureDatabaseTarget
+            Confirmed
         }
         
         private AzureTargetConfirmation UserConfirmAzureDatabaseTarget(string targetAzureDbUrl)
         {
-            // User should confirm operation, since we're going to manipulate an azure-hosted database
-            var isAzureDbUrl = !string.IsNullOrEmpty(targetAzureDbUrl);
-            if (!isAzureDbUrl)
-            {
-                return AzureTargetConfirmation.NotAnAzureDatabaseTarget;
-            }
-            
             Console.WriteLine("[CRITICAL] The defined target is hosted at Microsoft Azure. This operation will overwrite the target with the defined source. Without a backup, all data could be lost forever.");
 
             var maxRetries = 3;
