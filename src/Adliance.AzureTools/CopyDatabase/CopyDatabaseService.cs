@@ -108,7 +108,7 @@ namespace Adliance.AzureTools.CopyDatabase
                 return AzureTargetConfirmation.NotAnAzureDatabaseTarget;
             }
             
-            Console.WriteLine("[CRITICAL] The defined target is hosted at Microsoft Azure. This operation will override the target with the defined source. Without a backup, all data could be lost forever.");
+            Console.WriteLine("[CRITICAL] The defined target is hosted at Microsoft Azure. This operation will overwrite the target with the defined source. Without a backup, all data could be lost forever.");
 
             var maxRetries = 3;
             for (var retries = maxRetries; retries > 0; --retries)
