@@ -25,18 +25,22 @@ namespace Adliance.AzureTools.CopyDatabase
                 var sourceDbName = FindDatabaseName(_parameters.Source);
                 var targetDbName = FindDatabaseName(_parameters.Target);
 
-                var checkTarget = !_parameters.Force;
-                if (checkTarget)
+                var forceOperation = _parameters.Force;
+                if (forceOperation)
                 {
-                    var targetAzureDbUrl = GetAzureDatabaseUrl(_parameters.Target);
+                    Console.WriteLine("[Force] Skipping connection string check...");
+                }
+                else
+                {
+                    var azureDbStringResult = AnalyzeAzureDbString(_parameters.Target);
                     
                     // User should confirm operation, since we're going to manipulate an azure-hosted database
-                    var isAzureDbUrl = !string.IsNullOrEmpty(targetAzureDbUrl);
-                    if (isAzureDbUrl)
+                    if (azureDbStringResult.IsAzureConnectionString)
                     {
-                        var confirmationResult = UserConfirmAzureDatabaseTarget(targetAzureDbUrl);
+                        var confirmationResult = UserConfirmAzureDatabaseTarget(azureDbStringResult.AzureDbSubdomain);
                         if (confirmationResult == AzureTargetConfirmation.AbortOperation)
                         {
+                            Console.WriteLine("Exiting...");
                             return;
                         }                        
                     }
@@ -120,7 +124,7 @@ namespace Adliance.AzureTools.CopyDatabase
                 var confirmationString = Console.ReadLine();
                 if (string.IsNullOrEmpty(confirmationString))
                 {
-                    Console.WriteLine("Aborting copy-database operation, nothing changed...");
+                    Console.WriteLine("Aborting copy-database operation...");
                     return AzureTargetConfirmation.AbortOperation;
                 }
                 
@@ -131,7 +135,7 @@ namespace Adliance.AzureTools.CopyDatabase
                 }
             }
             
-            Console.WriteLine("Too may retries. Aborting copy-database operation, nothing changed...");
+            Console.WriteLine("Too may retries. Aborting copy-database operation...");
             return AzureTargetConfirmation.AbortOperation;
         }
         
@@ -210,16 +214,22 @@ namespace Adliance.AzureTools.CopyDatabase
 
             throw new Exception($"No database name found in \"{connectionString}\".");
         }
+
+        private struct AzureConnectionStringResult
+        {
+            public bool IsAzureConnectionString { get; set; }
+            public string AzureDbSubdomain { get; set; }
+        }
         
-        private string GetAzureDatabaseUrl(string connectionString)
+        private AzureConnectionStringResult AnalyzeAzureDbString(string connectionString)
         {
             var match = Regex.Match(connectionString, @"[ ;]*Server[ ]*\=[ ]*tcp:(.*?)\.database\.windows\.net.*[;$]", RegexOptions.IgnoreCase);
-            if (match.Success)
-            {
-                return match.Groups[1].Value.Trim();
-            }
 
-            return "";
+            return new AzureConnectionStringResult
+            {
+                IsAzureConnectionString = match.Success,
+                AzureDbSubdomain = match.Success && match.Groups.Count >= 2 ? match.Groups[1].Value.Trim() : "" 
+            };
         }
     }
 }
