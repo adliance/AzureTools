@@ -25,8 +25,8 @@ namespace Adliance.AzureTools.CopyDatabase
                 var sourceDbName = FindDatabaseName(_parameters.Source);
                 var targetDbName = FindDatabaseName(_parameters.Target);
 
-                var requireUserConfirmation = !_parameters.Force;
-                if (requireUserConfirmation)
+                var checkTarget = !_parameters.Force;
+                if (checkTarget)
                 {
                     var targetAzureDbUrl = GetAzureDatabaseUrl(_parameters.Target);
                     
@@ -42,7 +42,6 @@ namespace Adliance.AzureTools.CopyDatabase
                     }
                 }
                 
-
                 var fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), $"{sourceDbName}.bacpac");
                 if (_parameters.UseLocalIfExists && File.Exists(fileName))
                 {
