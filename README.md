@@ -36,4 +36,5 @@ azuretools copy-database --source "Server=tcp:myserver.database.windows.net,1433
 #### Additional parameters
 
 - `--elastic-pool "<elastic_pool_name>"`: Sets the Azure SQL elastic pool of the target database after it has been restored
-- `--use-local-backpac`: Each database gets downloaded to database-specific, local BACPAC to the user profile directory. If this parameter is set, and the BACPAC file exists locally, no new BACPAC will be downloaded and the local BACPAC will be restored. 
+- `--use-local-backpac`: Each database gets downloaded to database-specific, local BACPAC to the user profile directory. If this parameter is set, and the BACPAC file exists locally, no new BACPAC will be downloaded and the local BACPAC will be restored.
+- `--force`: Force copy-database operation without any user confirmation or interaction.

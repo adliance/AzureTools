@@ -24,8 +24,29 @@ namespace Adliance.AzureTools.CopyDatabase
             {
                 var sourceDbName = FindDatabaseName(_parameters.Source);
                 var targetDbName = FindDatabaseName(_parameters.Target);
-                var fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), $"{sourceDbName}.bacpac");
 
+                var forceOperation = _parameters.Force;
+                if (forceOperation)
+                {
+                    Console.WriteLine("[Force] Skipping connection string check...");
+                }
+                else
+                {
+                    var azureDbStringResult = AnalyzeAzureDbString(_parameters.Target);
+                    
+                    // User should confirm operation, since we're going to manipulate an azure-hosted database
+                    if (azureDbStringResult.IsAzureConnectionString)
+                    {
+                        var confirmationResult = UserConfirmAzureDatabaseTarget(azureDbStringResult.AzureDbSubdomain);
+                        if (confirmationResult == AzureTargetConfirmation.AbortOperation)
+                        {
+                            Console.WriteLine("Exiting...");
+                            return;
+                        }                        
+                    }
+                }
+                
+                var fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), $"{sourceDbName}.bacpac");
                 if (_parameters.UseLocalIfExists && File.Exists(fileName))
                 {
                     Console.WriteLine($"Using local file \"{fileName}\".");
@@ -85,6 +106,39 @@ namespace Adliance.AzureTools.CopyDatabase
             }
         }
 
+        private enum AzureTargetConfirmation
+        {
+            AbortOperation,
+            Confirmed
+        }
+        
+        private AzureTargetConfirmation UserConfirmAzureDatabaseTarget(string targetAzureDbUrl)
+        {
+            Console.WriteLine("[CRITICAL] The defined target is hosted at Microsoft Azure. This operation will overwrite the target with the defined source. Without a backup, all data could be lost forever.");
+
+            var maxRetries = 3;
+            for (var retries = maxRetries; retries > 0; --retries)
+            {
+                Console.WriteLine($"Enter '{targetAzureDbUrl}' to confirm the operation, to abort leave empty and hit enter ({retries} retries left):");
+                    
+                var confirmationString = Console.ReadLine();
+                if (string.IsNullOrEmpty(confirmationString))
+                {
+                    Console.WriteLine("Aborting copy-database operation...");
+                    return AzureTargetConfirmation.AbortOperation;
+                }
+                
+                if (confirmationString == targetAzureDbUrl)
+                {
+                    Console.WriteLine("Confirmed, continue operation...");
+                    return AzureTargetConfirmation.Confirmed;
+                }
+            }
+            
+            Console.WriteLine("Too may retries. Aborting copy-database operation...");
+            return AzureTargetConfirmation.AbortOperation;
+        }
+        
         private async Task SqlCommand(SqlConnection connection, string sql)
         {
             await using (var command = new SqlCommand(sql, connection))
@@ -152,13 +206,30 @@ namespace Adliance.AzureTools.CopyDatabase
 
         private string FindDatabaseName(string connectionString)
         {
-            var match = Regex.Match(connectionString, @"[ ;]Initial Catalog[ ]*\=(.*?)[;$]", RegexOptions.IgnoreCase);
+            var match = Regex.Match(connectionString, @"[ ;]*Initial Catalog[ ]*\=(.*?)[;$]", RegexOptions.IgnoreCase);
             if (match.Success)
             {
                 return match.Groups[1].Value.Trim();
             }
 
             throw new Exception($"No database name found in \"{connectionString}\".");
+        }
+
+        private struct AzureConnectionStringResult
+        {
+            public bool IsAzureConnectionString { get; set; }
+            public string AzureDbSubdomain { get; set; }
+        }
+        
+        private AzureConnectionStringResult AnalyzeAzureDbString(string connectionString)
+        {
+            var match = Regex.Match(connectionString, @"[ ;]*Server[ ]*\=[ ]*tcp:(.*?)\.database\.windows\.net.*[;$]", RegexOptions.IgnoreCase);
+
+            return new AzureConnectionStringResult
+            {
+                IsAzureConnectionString = match.Success,
+                AzureDbSubdomain = match.Success && match.Groups.Count >= 2 ? match.Groups[1].Value.Trim() : "" 
+            };
         }
     }
 }
